@@ -1,0 +1,192 @@
+MPLINK 4.41, Linker
+Linker Map File - Created Sun Mar 13 16:30:45 2016
+
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   0x000000    program   0x0007f8
+                   .cinit    romdata   0x0003fc    program   0x000004
+      .config_2007_MAIN.O       code   0x002007    program   0x000002
+
+
+
+                              Program Memory Usage 
+                               Start         End      
+                           ---------   ---------      
+                            0x000000    0x0003fd      
+                            0x002007    0x002007      
+            1023 out of 1093 program addresses used, program memory utilization is 93%
+
+
+
+                              Symbols - Sorted by Name
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+           Divide_Integer   0x0003e4    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                LCD_Clear   0x0001d7    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+         LCD_Print_Number   0x000202    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+        LCD_Print_Strings   0x00022b    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+          LCD_Print_Value   0x00025a    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+                LCD_SETUP   0x0001c0    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+             LCD_SPI_loop   0x0001f5    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+             LCD_SPI_send   0x0001f0    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+             LCD_Send_Cmd   0x0001ea    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+            LCD_Send_Data   0x0001ed    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+           LCD_Set_Cursor   0x0001e3    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+          LCD_end_sending   0x000200    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+             LCD_next_bit   0x0001fe    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+       PS2_Compute_Values   0x000272    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+            PS2_Read_Data   0x0002ad    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+             PS2_SPI_loop   0x000321    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+             PS2_SPI_send   0x00031d    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+      PS2_Set_Analog_Mode   0x0002cc    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+          PS2_end_sending   0x000331    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+             PS2_next_bit   0x00032e    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+                  Print_0   0x000124    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_1   0x000131    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_2   0x00013e    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_3   0x00014b    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_4   0x000158    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_5   0x000165    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_6   0x000172    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_7   0x00017f    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_8   0x00018c    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_9   0x000199    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_G   0x00010a    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_M   0x000117    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_P   0x000095    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_R   0x0000bc    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_T   0x00003a    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_Y   0x0000c9    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_a   0x0000d6    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_c   0x0000af    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_d   0x0000f0    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_e   0x000088    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_h   0x000047    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_i   0x0000a2    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_l   0x00007b    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+              Print_minus   0x0001a6    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_o   0x000061    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+               Print_plus   0x0001b3    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_r   0x000054    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_t   0x00006e    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_w   0x0000e3    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_x   0x0000fd    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+           RF24_Config_TX   0x000364    program     static C:\Users\x-programer\PIC\RC Transmitter 3\nRF24L01.inc
+            RF24_SPI_loop   0x0003c3    program     static C:\Users\x-programer\PIC\RC Transmitter 3\nRF24L01.inc
+            RF24_SPI_send   0x0003bf    program     static C:\Users\x-programer\PIC\RC Transmitter 3\nRF24L01.inc
+            RF24_Transmit   0x000333    program     static C:\Users\x-programer\PIC\RC Transmitter 3\nRF24L01.inc
+         RF24_end_sending   0x0003d3    program     static C:\Users\x-programer\PIC\RC Transmitter 3\nRF24L01.inc
+            RF24_next_bit   0x0003d0    program     static C:\Users\x-programer\PIC\RC Transmitter 3\nRF24L01.inc
+                  __next_   0x000282    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+                   _minus   0x000263    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+                    _plus   0x000261    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+                 continue   0x000265    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+            delay_100ms_1   0x0003dc    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+            delay_100ms_2   0x0003de    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+             delay_50us_1   0x0003d7    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+             delay_ms_100   0x0003da    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+              delay_us_50   0x0003d5    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                  div_end   0x0003fa    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                 div_loop   0x0003f3    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                    erase   0x000008    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                     init   0x000001    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+              lcd_clear_1   0x0001da    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+              lcd_clear_2   0x0001dc    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+                     loop   0x000020    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                next_nb_2   0x00026b    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+               pitch_sign   0x00029a    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+                roll_sign   0x0002a8    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+                    start   0x00001b    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                    t_inf   0x0003f0    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                    t_sup   0x0003ec    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                 v_loop_2   0x000266    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+                 yaw_sign   0x00028c    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+
+
+
+                              Symbols - Sorted by Address
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                     init   0x000001    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                    erase   0x000008    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                    start   0x00001b    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                     loop   0x000020    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                  Print_T   0x00003a    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_h   0x000047    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_r   0x000054    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_o   0x000061    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_t   0x00006e    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_l   0x00007b    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_e   0x000088    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_P   0x000095    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_i   0x0000a2    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_c   0x0000af    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_R   0x0000bc    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_Y   0x0000c9    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_a   0x0000d6    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_w   0x0000e3    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_d   0x0000f0    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_x   0x0000fd    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_G   0x00010a    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_M   0x000117    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_0   0x000124    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_1   0x000131    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_2   0x00013e    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_3   0x00014b    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_4   0x000158    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_5   0x000165    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_6   0x000172    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_7   0x00017f    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_8   0x00018c    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                  Print_9   0x000199    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+              Print_minus   0x0001a6    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+               Print_plus   0x0001b3    program     static C:\Users\x-programer\PIC\RC Transmitter 3\Print_Chars.inc
+                LCD_SETUP   0x0001c0    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+                LCD_Clear   0x0001d7    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+              lcd_clear_1   0x0001da    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+              lcd_clear_2   0x0001dc    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+           LCD_Set_Cursor   0x0001e3    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+             LCD_Send_Cmd   0x0001ea    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+            LCD_Send_Data   0x0001ed    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+             LCD_SPI_send   0x0001f0    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+             LCD_SPI_loop   0x0001f5    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+             LCD_next_bit   0x0001fe    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+          LCD_end_sending   0x000200    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+         LCD_Print_Number   0x000202    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+        LCD_Print_Strings   0x00022b    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+          LCD_Print_Value   0x00025a    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+                    _plus   0x000261    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+                   _minus   0x000263    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+                 continue   0x000265    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+                 v_loop_2   0x000266    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+                next_nb_2   0x00026b    program     static C:\Users\x-programer\PIC\RC Transmitter 3\LCD_NOKIA_5110.inc
+       PS2_Compute_Values   0x000272    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+                  __next_   0x000282    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+                 yaw_sign   0x00028c    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+               pitch_sign   0x00029a    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+                roll_sign   0x0002a8    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+            PS2_Read_Data   0x0002ad    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+      PS2_Set_Analog_Mode   0x0002cc    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+             PS2_SPI_send   0x00031d    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+             PS2_SPI_loop   0x000321    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+             PS2_next_bit   0x00032e    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+          PS2_end_sending   0x000331    program     static C:\Users\x-programer\PIC\RC Transmitter 3\PS2_controller.inc
+            RF24_Transmit   0x000333    program     static C:\Users\x-programer\PIC\RC Transmitter 3\nRF24L01.inc
+           RF24_Config_TX   0x000364    program     static C:\Users\x-programer\PIC\RC Transmitter 3\nRF24L01.inc
+            RF24_SPI_send   0x0003bf    program     static C:\Users\x-programer\PIC\RC Transmitter 3\nRF24L01.inc
+            RF24_SPI_loop   0x0003c3    program     static C:\Users\x-programer\PIC\RC Transmitter 3\nRF24L01.inc
+            RF24_next_bit   0x0003d0    program     static C:\Users\x-programer\PIC\RC Transmitter 3\nRF24L01.inc
+         RF24_end_sending   0x0003d3    program     static C:\Users\x-programer\PIC\RC Transmitter 3\nRF24L01.inc
+              delay_us_50   0x0003d5    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+             delay_50us_1   0x0003d7    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+             delay_ms_100   0x0003da    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+            delay_100ms_1   0x0003dc    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+            delay_100ms_2   0x0003de    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+           Divide_Integer   0x0003e4    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                    t_sup   0x0003ec    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                    t_inf   0x0003f0    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                 div_loop   0x0003f3    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+                  div_end   0x0003fa    program     static C:\Users\x-programer\PIC\RC Transmitter 3\main.asm
+
+

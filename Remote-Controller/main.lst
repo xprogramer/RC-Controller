@@ -1,0 +1,1927 @@
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001         LIST p=16F84
+                      00002         #include<p16F84.inc>
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC16F84 processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2011 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      00205         LIST
+                      00003 
+2007   3FF2           00004         __CONFIG _CP_OFF & _WDT_OFF & _PWRTE_ON & _HS_OSC
+                      00005 
+  00000008            00006 OPTIONVAL EQU H'0008'
+                      00007 
+                      00008 BANK0 macro
+                      00009         bcf STATUS,RP0
+                      00010         endm
+                      00011 
+                      00012 BANK1 macro
+                      00013         bsf STATUS,RP0
+                      00014         endm
+                      00015 
+                      00016 #define CHANNEL 0x3B
+                      00017 
+                      00018 #define LCD_SDA PORTB, 7
+                      00019 #define LCD_CLK PORTB, 0
+                      00020 #define LCD_RST PORTB, 1
+                      00021 #define LCD_SCE PORTB, 2
+                      00022 #define LCD_DC  PORTB, 3
+                      00023 
+                      00024 #define PS2_CMD PORTB, 7 ; orange
+                      00025 #define PS2_DAT PORTB, 6 ; brown
+                      00026 #define PS2_CLK PORTB, 5 ; blue
+                      00027 #define PS2_ATT PORTB, 4 ; yellow
+                      00028 
+                      00029 
+                      00030 #define RF24_MISO PORTB,6
+                      00031 
+                      00032 #define RF24_MOSI PORTA,0
+                      00033 #define RF24_SCK  PORTA,1
+                      00034 #define RF24_CE   PORTA,2
+                      00035 #define RF24_CSN  PORTA,3
+                      00036 
+                      00037 
+                      00038         CBLOCK 0x00C
+  0000000C            00039         b1             : 1
+  0000000D            00040         b2             : 1
+  0000000E            00041         b3             : 1
+  0000000F            00042         b4             : 1
+  00000010            00043         b5             : 1
+  00000011            00044         bits_counter   : 1
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+  00000012            00045         outByte        : 1
+  00000013            00046         inByte         : 1
+  00000014            00047         column         : 1
+  00000015            00048         line           : 1
+  00000016            00049         tmp1           : 1
+  00000017            00050         tmp2           : 1      
+  00000018            00051         Throttle           : 1
+  00000019            00052         Yaw                : 1
+  0000001A            00053         Roll               : 1
+  0000001B            00054         Pitch              : 1
+  0000001C            00055         rightButtons   : 1
+  0000001D            00056         leftButtons    : 1
+  0000001E            00057         rightJoystickX : 1
+  0000001F            00058         leftJoystickX  : 1
+  00000020            00059         rightJoystickY : 1
+  00000021            00060         leftJoystickY  : 1
+                      00061         ENDC
+                      00062 
+                      00063         ORG 0x000
+0000   2???           00064         goto init
+                      00065 
+0001                  00066 init
+0001   0185           00067         clrf PORTA
+0002   0186           00068         clrf PORTB
+                      00069         BANK1
+0003   1683               M         bsf STATUS,RP0
+0004   3008           00070         movlw OPTIONVAL
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0005   0081           00071         movwf OPTION_REG
+0006   300C           00072         movlw 0x0C
+0007   0084           00073         movwf FSR
+0008                  00074 erase
+0008   0180           00075         clrf INDF
+0009   0A84           00076         incf FSR,f
+000A   1F04           00077         btfss FSR,6
+000B   2???           00078         goto erase
+000C   1E04           00079         btfss FSR,4
+000D   2???           00080         goto erase
+                      00081         ;;;;
+000E   0186           00082         clrf PORTB
+000F   1706           00083         bsf PS2_DAT
+0010   0185           00084         clrf PORTA
+0011   1706           00085         bsf RF24_MISO
+                      00086         BANK0
+0012   1283               M         bcf STATUS,RP0
+0013   1686           00087         bsf PS2_CLK
+0014   0198           00088         clrf Throttle
+0015   019B           00089         clrf Pitch
+0016   019A           00090         clrf Roll
+0017   0199           00091         clrf Yaw
+0018   0194           00092         clrf column
+0019   0195           00093         clrf line
+001A   2???           00094         goto start
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00095 
+                      00096 
+001B                  00097 start
+                      00098         ; Setup the radio device
+001B   2???           00099         call RF24_Config_TX
+                      00100 
+                      00101         ; Setup the LCD device
+001C   2???           00102         call LCD_SETUP
+                      00103         ; Print the string labels
+001D   2???           00104         call LCD_Print_Strings
+                      00105 
+                      00106         ; Setup the PS2 controller
+001E   2???           00107         call PS2_Set_Analog_Mode
+                      00108 
+001F   2???           00109         goto loop
+                      00110 
+0020                  00111 loop
+                      00112         
+                      00113         ; read data from the PS2 controller
+0020   2???           00114         call PS2_Read_Data
+0021   2???           00115         call PS2_Compute_Values
+                      00116 
+                      00117         ; print the Throttle value
+0022   0195           00118         clrf line
+0023   303C           00119         movlw 0x3C
+0024   0094           00120         movwf column
+0025   2???           00121         call LCD_Set_Cursor
+0026   0818           00122         movfw Throttle
+0027   2???           00123         call LCD_Print_Value
+                      00124 
+                      00125         ; print the Pitch value
+0028   3001           00126         movlw 0x1
+0029   0095           00127         movwf line
+002A   2???           00128         call LCD_Set_Cursor
+002B   081B           00129         movfw Pitch
+002C   2???           00130         call LCD_Print_Value
+                      00131 
+                      00132         ; print the Roll value
+002D   3002           00133         movlw 0x2
+002E   0095           00134         movwf line
+002F   2???           00135         call LCD_Set_Cursor
+0030   081A           00136         movfw Roll
+0031   2???           00137         call LCD_Print_Value
+                      00138 
+                      00139         ; print the Yaw value
+0032   3003           00140         movlw 0x3
+0033   0095           00141         movwf line
+0034   2???           00142         call LCD_Set_Cursor
+0035   0819           00143         movfw Yaw
+0036   2???           00144         call LCD_Print_Value
+                      00145 
+                      00146 
+                      00147         ; send the control values to the quadcopter
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0037   2???           00148         call RF24_Transmit
+                      00149 
+0038   2???           00150         call delay_ms_100
+0039   2???           00151         goto loop
+                      00152 
+                      00153 
+                      00154 
+                      00155 
+                      00156 
+                      00157 #include "LCD_NOKIA_5110.inc"
+                      00001 #include "Print_Chars.inc"
+003A                  00001 Print_T
+                      00002         ; 0x01, 0x01, 0x7f, 0x01, 0x01 = T
+003A   3001           00003         movlw 0x01
+003B   2???           00004         call LCD_Send_Data
+003C   3001           00005         movlw 0x01
+003D   2???           00006         call LCD_Send_Data
+003E   307F           00007         movlw 0x7F
+003F   2???           00008         call LCD_Send_Data
+0040   3001           00009         movlw 0x01
+0041   2???           00010         call LCD_Send_Data
+0042   3001           00011         movlw 0x01
+0043   2???           00012         call LCD_Send_Data
+0044   0103           00013         clrw
+0045   2???           00014         call LCD_Send_Data
+0046   0008           00015         return
+                      00016         
+0047                  00017 Print_h 
+                      00018         ; 0x7f, 0x08, 0x04, 0x04, 0x78 = h
+0047   307F           00019         movlw 0x7F
+0048   2???           00020         call LCD_Send_Data
+0049   3008           00021         movlw 0x08
+004A   2???           00022         call LCD_Send_Data
+004B   3004           00023         movlw 0x04
+004C   2???           00024         call LCD_Send_Data
+004D   3004           00025         movlw 0x04
+004E   2???           00026         call LCD_Send_Data
+004F   3078           00027         movlw 0x78
+0050   2???           00028         call LCD_Send_Data
+0051   0103           00029         clrw
+0052   2???           00030         call LCD_Send_Data
+0053   0008           00031         return
+                      00032         
+                      00033         
+0054                  00034 Print_r 
+                      00035         ; 0x7c, 0x08, 0x04, 0x04, 0x08 = r
+0054   307C           00036         movlw 0x7C
+0055   2???           00037         call LCD_Send_Data
+0056   3008           00038         movlw 0x08
+0057   2???           00039         call LCD_Send_Data
+0058   3004           00040         movlw 0x04
+0059   2???           00041         call LCD_Send_Data
+005A   3004           00042         movlw 0x04
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+005B   2???           00043         call LCD_Send_Data
+005C   3008           00044         movlw 0x08
+005D   2???           00045         call LCD_Send_Data
+005E   0103           00046         clrw
+005F   2???           00047         call LCD_Send_Data
+0060   0008           00048         return
+                      00049         
+0061                  00050 Print_o 
+                      00051         ; 0x38, 0x44, 0x44, 0x44, 0x38 = o
+0061   3038           00052         movlw 0x38
+0062   2???           00053         call LCD_Send_Data
+0063   3044           00054         movlw 0x44
+0064   2???           00055         call LCD_Send_Data
+0065   3044           00056         movlw 0x44
+0066   2???           00057         call LCD_Send_Data
+0067   3044           00058         movlw 0x44
+0068   2???           00059         call LCD_Send_Data
+0069   3038           00060         movlw 0x38
+006A   2???           00061         call LCD_Send_Data
+006B   0103           00062         clrw
+006C   2???           00063         call LCD_Send_Data
+006D   0008           00064         return
+                      00065         
+006E                  00066 Print_t 
+                      00067         ; 0x04, 0x3f, 0x44, 0x40, 0x20 = t
+006E   3004           00068         movlw 0x04
+006F   2???           00069         call LCD_Send_Data
+0070   303F           00070         movlw 0x3F
+0071   2???           00071         call LCD_Send_Data
+0072   3044           00072         movlw 0x44
+0073   2???           00073         call LCD_Send_Data
+0074   3040           00074         movlw 0x40
+0075   2???           00075         call LCD_Send_Data
+0076   3020           00076         movlw 0x20
+0077   2???           00077         call LCD_Send_Data
+0078   0103           00078         clrw
+0079   2???           00079         call LCD_Send_Data
+007A   0008           00080         return
+                      00081         
+007B                  00082 Print_l 
+                      00083         ; 0x00, 0x41, 0x7f, 0x40, 0x00 = l
+007B   3000           00084         movlw 0x00
+007C   2???           00085         call LCD_Send_Data
+007D   3041           00086         movlw 0x41
+007E   2???           00087         call LCD_Send_Data
+007F   307F           00088         movlw 0x7F
+0080   2???           00089         call LCD_Send_Data
+0081   3040           00090         movlw 0x40
+0082   2???           00091         call LCD_Send_Data
+0083   3000           00092         movlw 0x00
+0084   2???           00093         call LCD_Send_Data
+0085   0103           00094         clrw
+0086   2???           00095         call LCD_Send_Data
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0087   0008           00096         return
+                      00097         
+0088                  00098 Print_e
+                      00099         ; 0x38, 0x54, 0x54, 0x54, 0x18 = e
+0088   3038           00100         movlw 0x38
+0089   2???           00101         call LCD_Send_Data
+008A   3054           00102         movlw 0x54
+008B   2???           00103         call LCD_Send_Data
+008C   3054           00104         movlw 0x54
+008D   2???           00105         call LCD_Send_Data
+008E   3054           00106         movlw 0x54
+008F   2???           00107         call LCD_Send_Data
+0090   3018           00108         movlw 0x18
+0091   2???           00109         call LCD_Send_Data
+0092   0103           00110         clrw
+0093   2???           00111         call LCD_Send_Data
+0094   0008           00112         return
+                      00113         
+0095                  00114 Print_P
+                      00115         ; 0x7F, 0x09, 0x09, 0x09, 0x06 = P
+0095   307F           00116         movlw 0x7F
+0096   2???           00117         call LCD_Send_Data
+0097   3009           00118         movlw 0x09
+0098   2???           00119         call LCD_Send_Data
+0099   3009           00120         movlw 0x09
+009A   2???           00121         call LCD_Send_Data
+009B   3009           00122         movlw 0x09
+009C   2???           00123         call LCD_Send_Data
+009D   3006           00124         movlw 0x06
+009E   2???           00125         call LCD_Send_Data
+009F   0103           00126         clrw
+00A0   2???           00127         call LCD_Send_Data
+00A1   0008           00128         return
+                      00129         
+00A2                  00130 Print_i
+                      00131         ; 0x00, 0x44, 0x7D, 0x40, 0x00 = i
+00A2   3000           00132         movlw 0x00
+00A3   2???           00133         call LCD_Send_Data
+00A4   3044           00134         movlw 0x44
+00A5   2???           00135         call LCD_Send_Data
+00A6   307D           00136         movlw 0x7D
+00A7   2???           00137         call LCD_Send_Data
+00A8   3040           00138         movlw 0x40
+00A9   2???           00139         call LCD_Send_Data
+00AA   3000           00140         movlw 0x00
+00AB   2???           00141         call LCD_Send_Data
+00AC   0103           00142         clrw
+00AD   2???           00143         call LCD_Send_Data
+00AE   0008           00144         return
+                      00145         
+00AF                  00146 Print_c
+                      00147         ; 0x38, 0x44, 0x44, 0x44, 0x20 = c
+00AF   3038           00148         movlw 0x38
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00B0   2???           00149         call LCD_Send_Data
+00B1   3044           00150         movlw 0x44
+00B2   2???           00151         call LCD_Send_Data
+00B3   3044           00152         movlw 0x44
+00B4   2???           00153         call LCD_Send_Data
+00B5   3044           00154         movlw 0x44
+00B6   2???           00155         call LCD_Send_Data
+00B7   3020           00156         movlw 0x20
+00B8   2???           00157         call LCD_Send_Data
+00B9   0103           00158         clrw
+00BA   2???           00159         call LCD_Send_Data
+00BB   0008           00160         return
+                      00161         
+00BC                  00162 Print_R
+                      00163         ; 0x7F, 0x09, 0x19, 0x29, 0x46 = R
+00BC   307F           00164         movlw 0x7F
+00BD   2???           00165         call LCD_Send_Data
+00BE   3009           00166         movlw 0x09
+00BF   2???           00167         call LCD_Send_Data
+00C0   3019           00168         movlw 0x19
+00C1   2???           00169         call LCD_Send_Data
+00C2   3029           00170         movlw 0x29
+00C3   2???           00171         call LCD_Send_Data
+00C4   3046           00172         movlw 0x46
+00C5   2???           00173         call LCD_Send_Data
+00C6   0103           00174         clrw
+00C7   2???           00175         call LCD_Send_Data
+00C8   0008           00176         return
+                      00177         
+00C9                  00178 Print_Y
+                      00179         ; 0x03, 0x04, 0x78, 0x04, 0x03 = Y
+00C9   3003           00180         movlw 0x03
+00CA   2???           00181         call LCD_Send_Data
+00CB   3004           00182         movlw 0x04
+00CC   2???           00183         call LCD_Send_Data
+00CD   3078           00184         movlw 0x78
+00CE   2???           00185         call LCD_Send_Data
+00CF   3004           00186         movlw 0x04
+00D0   2???           00187         call LCD_Send_Data
+00D1   3003           00188         movlw 0x03
+00D2   2???           00189         call LCD_Send_Data
+00D3   0103           00190         clrw
+00D4   2???           00191         call LCD_Send_Data
+00D5   0008           00192         return
+                      00193         
+00D6                  00194 Print_a
+                      00195         ; 0x20, 0x54, 0x54, 0x54, 0x78 = a
+00D6   3020           00196         movlw 0x20
+00D7   2???           00197         call LCD_Send_Data
+00D8   3054           00198         movlw 0x54
+00D9   2???           00199         call LCD_Send_Data
+00DA   3054           00200         movlw 0x54
+00DB   2???           00201         call LCD_Send_Data
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00DC   3054           00202         movlw 0x54
+00DD   2???           00203         call LCD_Send_Data
+00DE   3078           00204         movlw 0x78
+00DF   2???           00205         call LCD_Send_Data
+00E0   0103           00206         clrw
+00E1   2???           00207         call LCD_Send_Data
+00E2   0008           00208         return
+                      00209         
+00E3                  00210 Print_w
+                      00211         ; 0x3C, 0x40, 0x30, 0x40, 0x3C = w
+00E3   303C           00212         movlw 0x3C
+00E4   2???           00213         call LCD_Send_Data
+00E5   3040           00214         movlw 0x40
+00E6   2???           00215         call LCD_Send_Data
+00E7   3030           00216         movlw 0x30
+00E8   2???           00217         call LCD_Send_Data
+00E9   3040           00218         movlw 0x40
+00EA   2???           00219         call LCD_Send_Data
+00EB   303C           00220         movlw 0x3C
+00EC   2???           00221         call LCD_Send_Data
+00ED   0103           00222         clrw
+00EE   2???           00223         call LCD_Send_Data
+00EF   0008           00224         return
+                      00225         
+00F0                  00226 Print_d
+                      00227         ; 0x38, 0x44, 0x44, 0x48, 0x7F = d
+00F0   3038           00228         movlw 0x38
+00F1   2???           00229         call LCD_Send_Data
+00F2   3044           00230         movlw 0x44
+00F3   2???           00231         call LCD_Send_Data
+00F4   3044           00232         movlw 0x44
+00F5   2???           00233         call LCD_Send_Data
+00F6   3048           00234         movlw 0x48
+00F7   2???           00235         call LCD_Send_Data
+00F8   307F           00236         movlw 0x7F
+00F9   2???           00237         call LCD_Send_Data
+00FA   0103           00238         clrw
+00FB   2???           00239         call LCD_Send_Data
+00FC   0008           00240         return
+                      00241         
+00FD                  00242 Print_x
+                      00243         ; 0x44, 0x28, 0x10, 0x28, 0x44 = x
+00FD   3044           00244         movlw 0x44
+00FE   2???           00245         call LCD_Send_Data
+00FF   3028           00246         movlw 0x28
+0100   2???           00247         call LCD_Send_Data
+0101   3010           00248         movlw 0x10
+0102   2???           00249         call LCD_Send_Data
+0103   3028           00250         movlw 0x28
+0104   2???           00251         call LCD_Send_Data
+0105   3044           00252         movlw 0x44
+0106   2???           00253         call LCD_Send_Data
+0107   0103           00254         clrw
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0108   2???           00255         call LCD_Send_Data
+0109   0008           00256         return
+                      00257         
+010A                  00258 Print_G
+                      00259         ; 0x3E, 0x41, 0x41, 0x51, 0x32 = G
+010A   303E           00260         movlw 0x3E
+010B   2???           00261         call LCD_Send_Data
+010C   3041           00262         movlw 0x41
+010D   2???           00263         call LCD_Send_Data
+010E   3041           00264         movlw 0x41
+010F   2???           00265         call LCD_Send_Data
+0110   3051           00266         movlw 0x51
+0111   2???           00267         call LCD_Send_Data
+0112   3032           00268         movlw 0x32
+0113   2???           00269         call LCD_Send_Data
+0114   0103           00270         clrw
+0115   2???           00271         call LCD_Send_Data
+0116   0008           00272         return
+                      00273         
+0117                  00274 Print_M
+                      00275         ; 0x7F, 0x02, 0x04, 0x02, 0x7F = M
+0117   307F           00276         movlw 0x7F
+0118   2???           00277         call LCD_Send_Data
+0119   3002           00278         movlw 0x02
+011A   2???           00279         call LCD_Send_Data
+011B   3004           00280         movlw 0x04
+011C   2???           00281         call LCD_Send_Data
+011D   3002           00282         movlw 0x02
+011E   2???           00283         call LCD_Send_Data
+011F   307F           00284         movlw 0x7F
+0120   2???           00285         call LCD_Send_Data
+0121   0103           00286         clrw
+0122   2???           00287         call LCD_Send_Data
+0123   0008           00288         return
+                      00289         
+0124                  00290 Print_0
+                      00291         ; 0x3E, 0x51, 0x49, 0x45, 0x3E = 0
+0124   303E           00292         movlw 0x3E
+0125   2???           00293         call LCD_Send_Data
+0126   3051           00294         movlw 0x51
+0127   2???           00295         call LCD_Send_Data
+0128   3049           00296         movlw 0x49
+0129   2???           00297         call LCD_Send_Data
+012A   3045           00298         movlw 0x45
+012B   2???           00299         call LCD_Send_Data
+012C   303E           00300         movlw 0x3E
+012D   2???           00301         call LCD_Send_Data
+012E   0103           00302         clrw
+012F   2???           00303         call LCD_Send_Data
+0130   0008           00304         return
+                      00305         
+0131                  00306 Print_1
+                      00307         ; 0x00, 0x42, 0x7F, 0x40, 0x00 = 1
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0131   3000           00308         movlw 0x00
+0132   2???           00309         call LCD_Send_Data
+0133   3042           00310         movlw 0x42
+0134   2???           00311         call LCD_Send_Data
+0135   307F           00312         movlw 0x7F
+0136   2???           00313         call LCD_Send_Data
+0137   3040           00314         movlw 0x40
+0138   2???           00315         call LCD_Send_Data
+0139   3000           00316         movlw 0x00
+013A   2???           00317         call LCD_Send_Data
+013B   0103           00318         clrw
+013C   2???           00319         call LCD_Send_Data
+013D   0008           00320         return
+                      00321         
+013E                  00322 Print_2
+                      00323         ; 0x42, 0x61, 0x51, 0x49, 0x46 = 2
+013E   3042           00324         movlw 0x42
+013F   2???           00325         call LCD_Send_Data
+0140   3061           00326         movlw 0x61
+0141   2???           00327         call LCD_Send_Data
+0142   3051           00328         movlw 0x51
+0143   2???           00329         call LCD_Send_Data
+0144   3049           00330         movlw 0x49
+0145   2???           00331         call LCD_Send_Data
+0146   3046           00332         movlw 0x46
+0147   2???           00333         call LCD_Send_Data
+0148   0103           00334         clrw
+0149   2???           00335         call LCD_Send_Data
+014A   0008           00336         return
+                      00337         
+014B                  00338 Print_3
+                      00339         ; 0x21, 0x41, 0x45, 0x4B, 0x31 = 3
+014B   3021           00340         movlw 0x21
+014C   2???           00341         call LCD_Send_Data
+014D   3041           00342         movlw 0x41
+014E   2???           00343         call LCD_Send_Data
+014F   3045           00344         movlw 0x45
+0150   2???           00345         call LCD_Send_Data
+0151   304B           00346         movlw 0x4B
+0152   2???           00347         call LCD_Send_Data
+0153   3031           00348         movlw 0x31
+0154   2???           00349         call LCD_Send_Data
+0155   0103           00350         clrw
+0156   2???           00351         call LCD_Send_Data
+0157   0008           00352         return
+                      00353         
+0158                  00354 Print_4
+                      00355         ; 0x18, 0x14, 0x12, 0x7F, 0x10 = 4
+0158   3018           00356         movlw 0x18
+0159   2???           00357         call LCD_Send_Data
+015A   3014           00358         movlw 0x14
+015B   2???           00359         call LCD_Send_Data
+015C   3012           00360         movlw 0x12
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+015D   2???           00361         call LCD_Send_Data
+015E   307F           00362         movlw 0x7F
+015F   2???           00363         call LCD_Send_Data
+0160   3010           00364         movlw 0x10
+0161   2???           00365         call LCD_Send_Data
+0162   0103           00366         clrw
+0163   2???           00367         call LCD_Send_Data
+0164   0008           00368         return
+                      00369         
+0165                  00370 Print_5
+                      00371         ; 0x27, 0x45, 0x45, 0x45, 0x39 = 5
+0165   3027           00372         movlw 0x27
+0166   2???           00373         call LCD_Send_Data
+0167   3045           00374         movlw 0x45
+0168   2???           00375         call LCD_Send_Data
+0169   3045           00376         movlw 0x45
+016A   2???           00377         call LCD_Send_Data
+016B   3045           00378         movlw 0x45
+016C   2???           00379         call LCD_Send_Data
+016D   3039           00380         movlw 0x39
+016E   2???           00381         call LCD_Send_Data
+016F   0103           00382         clrw
+0170   2???           00383         call LCD_Send_Data
+0171   0008           00384         return
+                      00385         
+0172                  00386 Print_6
+                      00387         ; 0x3C, 0x4A, 0x49, 0x49, 0x30 = 6
+0172   303C           00388         movlw 0x3C
+0173   2???           00389         call LCD_Send_Data
+0174   304A           00390         movlw 0x4A
+0175   2???           00391         call LCD_Send_Data
+0176   3049           00392         movlw 0x49
+0177   2???           00393         call LCD_Send_Data
+0178   3049           00394         movlw 0x49
+0179   2???           00395         call LCD_Send_Data
+017A   3030           00396         movlw 0x30
+017B   2???           00397         call LCD_Send_Data
+017C   0103           00398         clrw
+017D   2???           00399         call LCD_Send_Data
+017E   0008           00400         return
+                      00401         
+017F                  00402 Print_7
+                      00403         ; 0x01, 0x71, 0x09, 0x05, 0x03 = 7
+017F   3001           00404         movlw 0x01
+0180   2???           00405         call LCD_Send_Data
+0181   3071           00406         movlw 0x71
+0182   2???           00407         call LCD_Send_Data
+0183   3009           00408         movlw 0x09
+0184   2???           00409         call LCD_Send_Data
+0185   3005           00410         movlw 0x05
+0186   2???           00411         call LCD_Send_Data
+0187   3003           00412         movlw 0x03
+0188   2???           00413         call LCD_Send_Data
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 12
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0189   0103           00414         clrw
+018A   2???           00415         call LCD_Send_Data
+018B   0008           00416         return
+                      00417         
+018C                  00418 Print_8
+                      00419         ; 0x36, 0x49, 0x49, 0x49, 0x36 = 8
+018C   3036           00420         movlw 0x36
+018D   2???           00421         call LCD_Send_Data
+018E   3049           00422         movlw 0x49
+018F   2???           00423         call LCD_Send_Data
+0190   3049           00424         movlw 0x49
+0191   2???           00425         call LCD_Send_Data
+0192   3049           00426         movlw 0x49
+0193   2???           00427         call LCD_Send_Data
+0194   3036           00428         movlw 0x36
+0195   2???           00429         call LCD_Send_Data
+0196   0103           00430         clrw
+0197   2???           00431         call LCD_Send_Data
+0198   0008           00432         return
+                      00433         
+0199                  00434 Print_9
+                      00435         ; 0x06, 0x49, 0x49, 0x29, 0x1E = 9
+0199   3006           00436         movlw 0x06
+019A   2???           00437         call LCD_Send_Data
+019B   3049           00438         movlw 0x49
+019C   2???           00439         call LCD_Send_Data
+019D   3049           00440         movlw 0x49
+019E   2???           00441         call LCD_Send_Data
+019F   3029           00442         movlw 0x29
+01A0   2???           00443         call LCD_Send_Data
+01A1   301E           00444         movlw 0x1E
+01A2   2???           00445         call LCD_Send_Data
+01A3   0103           00446         clrw
+01A4   2???           00447         call LCD_Send_Data
+01A5   0008           00448         return
+                      00449 
+01A6                  00450 Print_minus
+                      00451         ; 0x08, 0x08, 0x08, 0x08, 0x08 = -
+01A6   3008           00452         movlw 0x08
+01A7   2???           00453         call LCD_Send_Data
+01A8   3008           00454         movlw 0x08
+01A9   2???           00455         call LCD_Send_Data
+01AA   3008           00456         movlw 0x08
+01AB   2???           00457         call LCD_Send_Data
+01AC   3008           00458         movlw 0x08
+01AD   2???           00459         call LCD_Send_Data
+01AE   3008           00460         movlw 0x08
+01AF   2???           00461         call LCD_Send_Data
+01B0   0103           00462         clrw
+01B1   2???           00463         call LCD_Send_Data
+01B2   0008           00464         return
+                      00465 
+01B3                  00466 Print_plus
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 13
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00467         ; 0x08, 0x08, 0x36, 0x08, 0x08 = +
+01B3   3008           00468         movlw 0x08
+01B4   2???           00469         call LCD_Send_Data
+01B5   3008           00470         movlw 0x08
+01B6   2???           00471         call LCD_Send_Data
+01B7   3036           00472         movlw 0x36
+01B8   2???           00473         call LCD_Send_Data
+01B9   3008           00474         movlw 0x08
+01BA   2???           00475         call LCD_Send_Data
+01BB   3008           00476         movlw 0x08
+01BC   2???           00477         call LCD_Send_Data
+01BD   0103           00478         clrw
+01BE   2???           00479         call LCD_Send_Data
+01BF   0008           00480         return
+                      00002 
+                      00003 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00004 ; FUNCTION TO SETUP AND INITIALIZE THE LCD SCREEN
+                      00005 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+01C0                  00006 LCD_SETUP
+01C0   1486           00007         bsf LCD_RST
+01C1   1506           00008         bsf LCD_SCE
+01C2   1086           00009         bcf LCD_RST
+01C3   2???           00010         call delay_ms_100
+01C4   1486           00011         bsf LCD_RST
+                      00012         ; Extended instruction set control (H=1)
+01C5   3021           00013         movlw 0x21
+01C6   2???           00014         call LCD_Send_Cmd
+                      00015         ; Bias system (1:48)
+01C7   3013           00016         movlw 0x13
+01C8   2???           00017         call LCD_Send_Cmd
+                      00018         ; Default Vop (3.06 + 66 * 0.06 = 7V)
+01C9   30C2           00019         movlw 0xC2
+01CA   2???           00020         call LCD_Send_Cmd
+                      00021         ; Extended instruction set control (H=0)
+01CB   3020           00022         movlw 0x20
+01CC   2???           00023         call LCD_Send_Cmd
+                      00024         ; All display segments on
+01CD   3009           00025         movlw 0x09
+01CE   2???           00026         call LCD_Send_Cmd
+                      00027         ; Clear the screen
+01CF   2???           00028         call LCD_Clear
+                      00029         ; Activate the LCD
+                      00030         ; Dilay blanksp
+01D0   3008           00031         movlw 0x08
+01D1   2???           00032         call LCD_Send_Cmd
+                      00033         ; Normal mode (0x0d = inverse mode)
+01D2   300C           00034         movlw 0x0C
+01D3   2???           00035         call LCD_Send_Cmd
+01D4   2???           00036         call delay_ms_100
+                      00037         ; Set the cursor at the origin (0,0)
+01D5   2???           00038         call LCD_Set_Cursor
+01D6   0008           00039         return
+                      00040 
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 14
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00041         
+                      00042 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00043 ; FUNCTION TO CLEAR THE WHOLE SCREEN
+                      00044 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+01D7                  00045 LCD_Clear
+01D7   2???           00046         call LCD_Set_Cursor ; Set the cursor to the initial position
+01D8   3010           00047         movlw 0x10
+01D9   0096           00048         movwf tmp1
+01DA                  00049 lcd_clear_1
+01DA   3048           00050         movlw 0x48
+01DB   0097           00051         movwf tmp2
+01DC                  00052 lcd_clear_2
+01DC   0103           00053         clrw
+01DD   2???           00054         call LCD_Send_Data
+01DE   0B97           00055         decfsz tmp2,f
+01DF   2???           00056         goto lcd_clear_2
+01E0   0B96           00057         decfsz tmp1,f
+01E1   2???           00058         goto lcd_clear_1
+01E2   0008           00059         return
+                      00060 
+                      00061 
+                      00062 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00063 ; FUNCTION TO SET THE CURSOR TO A GIVEN POSITION (X and Y)
+                      00064 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+01E3                  00065 LCD_Set_Cursor
+01E3   0814           00066         movfw column
+01E4   3880           00067         iorlw 0x80
+01E5   2???           00068         call LCD_Send_Cmd
+01E6   0815           00069         movfw line
+01E7   3840           00070         iorlw 0x40
+01E8   2???           00071         call LCD_Send_Cmd
+01E9   0008           00072         return
+                      00073 
+                      00074 
+                      00075 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00076 ; FUNCTION TO SEND COMMAND VIA SPI BUS
+                      00077 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+01EA                  00078 LCD_Send_Cmd
+01EA   1186           00079         bcf LCD_DC
+01EB   2???           00080         call LCD_SPI_send
+01EC   0008           00081         return
+                      00082 
+                      00083 
+                      00084 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00085 ; FUNCTION TO SEND DATA VIA SPI BUS
+                      00086 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+01ED                  00087 LCD_Send_Data
+01ED   1586           00088         bsf LCD_DC
+01EE   2???           00089         call LCD_SPI_send
+01EF   0008           00090         return
+                      00091 
+                      00092 
+                      00093 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 15
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00094 ; FUNCTION TO SEND AND READ DATA VIA SPI BUS (MSBFirst)
+                      00095 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+01F0                  00096 LCD_SPI_send
+01F0   0092           00097         movwf outByte
+01F1   3008           00098         movlw 0x08
+01F2   0091           00099         movwf bits_counter
+01F3   0193           00100         clrf inByte
+01F4   1106           00101         bcf LCD_SCE
+01F5                  00102 LCD_SPI_loop ; prepare the bit to clock
+01F5   1006           00103         bcf LCD_CLK ; prepare the bit to be clocked
+01F6   1F92           00104         btfss outByte,7
+01F7   1386           00105         bcf LCD_SDA
+01F8   1B92           00106         btfsc outByte,7
+01F9   1786           00107         bsf LCD_SDA
+01FA   1406           00108         bsf LCD_CLK ; clock the bit
+01FB   0B91           00109         decfsz bits_counter,f
+01FC   2???           00110         goto LCD_next_bit
+01FD   2???           00111         goto LCD_end_sending
+01FE                  00112 LCD_next_bit
+                      00113         ; move to next bit
+01FE   0D92           00114         rlf outByte,f
+01FF   2???           00115         goto LCD_SPI_loop
+0200                  00116 LCD_end_sending
+0200   1506           00117         bsf LCD_SCE
+0201   0008           00118         return
+                      00119 
+                      00120 
+                      00121 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00122 ; FUNCTION TO PRINT NUMBER IN THE SCREEN
+                      00123 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+0202                  00124 LCD_Print_Number
+0202   080C           00125         movfw b1
+0203   3C00           00126         sublw 0x00
+0204   1903           00127         btfsc STATUS,Z
+0205   2???           00128         call Print_0
+0206   080C           00129         movfw b1
+0207   3C01           00130         sublw 0x01
+0208   1903           00131         btfsc STATUS,Z
+0209   2???           00132         call Print_1
+020A   080C           00133         movfw b1
+020B   3C02           00134         sublw 0x02
+020C   1903           00135         btfsc STATUS,Z
+020D   2???           00136         call Print_2
+020E   080C           00137         movfw b1
+020F   3C03           00138         sublw 0x03
+0210   1903           00139         btfsc STATUS,Z
+0211   2???           00140         call Print_3
+0212   080C           00141         movfw b1
+0213   3C04           00142         sublw 0x04
+0214   1903           00143         btfsc STATUS,Z
+0215   2???           00144         call Print_4
+0216   080C           00145         movfw b1
+0217   3C05           00146         sublw 0x05
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 16
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0218   1903           00147         btfsc STATUS,Z
+0219   2???           00148         call Print_5
+021A   080C           00149         movfw b1
+021B   3C06           00150         sublw 0x06
+021C   1903           00151         btfsc STATUS,Z
+021D   2???           00152         call Print_6
+021E   080C           00153         movfw b1
+021F   3C07           00154         sublw 0x07
+0220   1903           00155         btfsc STATUS,Z
+0221   2???           00156         call Print_7
+0222   080C           00157         movfw b1
+0223   3C08           00158         sublw 0x08
+0224   1903           00159         btfsc STATUS,Z
+0225   2???           00160         call Print_8
+0226   080C           00161         movfw b1
+0227   3C09           00162         sublw 0x09
+0228   1903           00163         btfsc STATUS,Z
+0229   2???           00164         call Print_9
+022A   0008           00165         return
+                      00166         
+                      00167         
+                      00168 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00169 ; FUNCTION TO PRINT STRING LABELS IN THE SCREEN
+                      00170 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+022B                  00171 LCD_Print_Strings
+                      00172         ; Throttle
+022B   2???           00173         call LCD_Set_Cursor
+022C   2???           00174         call Print_T
+022D   2???           00175         call Print_h
+022E   2???           00176         call Print_r
+022F   2???           00177         call Print_o
+0230   2???           00178         call Print_t
+0231   2???           00179         call Print_t
+0232   2???           00180         call Print_l
+0233   2???           00181         call Print_e
+                      00182         ; Pitch
+0234   3001           00183         movlw 0x01
+0235   0095           00184         movwf line
+0236   2???           00185         call LCD_Set_Cursor
+0237   2???           00186         call Print_P
+0238   2???           00187         call Print_i
+0239   2???           00188         call Print_t
+023A   2???           00189         call Print_c
+023B   2???           00190         call Print_h
+                      00191         ; Roll
+023C   3002           00192         movlw 0x02
+023D   0095           00193         movwf line
+023E   2???           00194         call LCD_Set_Cursor
+023F   2???           00195         call Print_R
+0240   2???           00196         call Print_o
+0241   2???           00197         call Print_l
+0242   2???           00198         call Print_l
+                      00199         ; Yaw
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 17
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0243   3003           00200         movlw 0x03
+0244   0095           00201         movwf line
+0245   2???           00202         call LCD_Set_Cursor
+0246   2???           00203         call Print_Y
+0247   2???           00204         call Print_a
+0248   2???           00205         call Print_w
+                      00206         ; led
+                      00207 
+                      00208         ; xProGraMer
+0249   3008           00209         movlw 0x08
+024A   0094           00210         movwf column
+024B   3005           00211         movlw 0x05
+024C   0095           00212         movwf line
+024D   2???           00213         call LCD_Set_Cursor
+024E   2???           00214         call Print_x
+024F   2???           00215         call Print_minus
+0250   2???           00216         call Print_P
+0251   2???           00217         call Print_r
+0252   2???           00218         call Print_o
+0253   2???           00219         call Print_G
+0254   2???           00220         call Print_r
+0255   2???           00221         call Print_a
+0256   2???           00222         call Print_M
+0257   2???           00223         call Print_e
+0258   2???           00224         call Print_r
+0259   0008           00225         return
+                      00226         
+                      00227 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00228 ; FUNCTION TO PRINT A VALUE IN THE SCREEN
+                      00229 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+025A                  00230 LCD_Print_Value
+025A   018C           00231         clrf b1
+025B   018D           00232         clrf b2
+025C   0096           00233         movwf tmp1
+025D   3C00           00234         sublw 0x00
+025E   1F96           00235         btfss tmp1,7
+025F   2???           00236         goto _plus
+0260   2???           00237         goto _minus
+0261                  00238 _plus
+0261   2???           00239         call Print_plus
+0262   2???           00240         goto continue
+0263                  00241 _minus
+0263   2???           00242         call Print_minus
+0264   1396           00243         bcf tmp1,7
+0265                  00244 continue
+0265   0816           00245         movfw tmp1
+0266                  00246 v_loop_2
+0266   3EF6           00247         addlw -0A ; tmp1 - 10
+0267   1C03           00248         btfss STATUS,C
+0268   2???           00249         goto next_nb_2
+0269   0A8C           00250         incf b1,f
+026A   2???           00251         goto v_loop_2
+026B                  00252 next_nb_2
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 18
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+026B   3E0A           00253         addlw 0x0A
+026C   008D           00254         movwf b2
+026D   2???           00255         call LCD_Print_Number
+026E   080D           00256         movfw b2
+026F   008C           00257         movwf b1
+0270   2???           00258         call LCD_Print_Number
+0271   0008           00259         return
+                      00158 #include "PS2_controller.inc"
+                      00001 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00002 ; FUNCTION TO COMPUTE Throttle, Yaw, Pitch and Roll
+                      00003 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+0272                  00004 PS2_Compute_Values
+                      00005         ; Throttle (y1);;;;;;;;;;;;;;;;;;;;;;;;;
+0272   3032           00006         movlw 0x32
+0273   008D           00007         movwf b2
+0274   0821           00008         movfw leftJoystickY
+0275   2???           00009         call Divide_Integer
+0276   180F           00010         btfsc b4,0
+0277   0298           00011         subwf Throttle,f
+0278   1C0F           00012         btfss b4,0
+0279   0798           00013         addwf Throttle,f
+027A   1B98           00014         btfsc Throttle,7 ; if Throttle < 0 then set it to 0
+027B   0198           00015         clrf Throttle
+                      00016 
+027C   0818           00017         movfw Throttle
+027D   3C63           00018         sublw 0x63 ; 99 - Throttle
+027E   1803           00019         btfsc STATUS,C
+027F   2???           00020         goto __next_
+0280   3063           00021         movlw 0x63
+0281   0098           00022         movwf Throttle
+                      00023 
+0282                  00024 __next_
+                      00025         ; Yaw (x1);;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+0282   3004           00026         movlw 0x04
+0283   008D           00027         movwf b2
+0284   081F           00028         movfw leftJoystickX
+0285   2???           00029         call Divide_Integer
+0286   0099           00030         movwf Yaw
+0287   3C1E           00031         sublw 0x1E ; 30 - Yaw
+0288   1803           00032         btfsc STATUS,C
+0289   2???           00033         goto yaw_sign
+028A   301E           00034         movlw 0x1E
+028B   0099           00035         movwf Yaw
+028C                  00036 yaw_sign
+028C   180F           00037         btfsc b4,0
+028D   1399           00038         bcf Yaw,7
+028E   1C0F           00039         btfss b4,0
+028F   1799           00040         bsf Yaw,7       
+                      00041         ; Pitch (y2);;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+0290   3004           00042         movlw 0x04
+0291   008D           00043         movwf b2
+0292   0820           00044         movfw rightJoystickY
+0293   2???           00045         call Divide_Integer
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 19
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0294   009B           00046         movwf Pitch
+0295   3C1E           00047         sublw 0x1E ; 30 - Pitch
+0296   1803           00048         btfsc STATUS,C
+0297   2???           00049         goto pitch_sign
+0298   301E           00050         movlw 0x1E
+0299   009B           00051         movwf Pitch
+029A                  00052 pitch_sign
+029A   180F           00053         btfsc b4,0
+029B   179B           00054         bsf Pitch,7
+029C   1C0F           00055         btfss b4,0
+029D   139B           00056         bcf Pitch,7
+                      00057         ; Roll (x2);;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+029E   3004           00058         movlw 0x04
+029F   008D           00059         movwf b2
+02A0   081E           00060         movfw rightJoystickX
+02A1   2???           00061         call Divide_Integer
+02A2   009A           00062         movwf Roll
+02A3   3C1E           00063         sublw 0x1E ; 30 - Roll
+02A4   1803           00064         btfsc STATUS,C
+02A5   2???           00065         goto roll_sign
+02A6   301E           00066         movlw 0x1E
+02A7   009A           00067         movwf Roll
+02A8                  00068 roll_sign
+02A8   180F           00069         btfsc b4,0
+02A9   139A           00070         bcf Roll,7
+02AA   1C0F           00071         btfss b4,0
+02AB   179A           00072         bsf Roll,7
+02AC   0008           00073         return
+                      00074 
+                      00075 
+                      00076 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00077 ; FUNCTION TO READ DATA FROM THE PS2 CONTROLLER
+                      00078 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+02AD                  00079 PS2_Read_Data
+                      00080         ;************** start sending ******************
+02AD   1206           00081         bcf PS2_ATT
+02AE   2???           00082         call delay_us_50
+02AF   2???           00083         call delay_us_50
+                      00084 
+                      00085         ; start signal
+02B0   3001           00086         movlw 0x01
+02B1   2???           00087         call PS2_SPI_send
+                      00088         ; request status
+02B2   3042           00089         movlw 0x42
+02B3   2???           00090         call PS2_SPI_send
+                      00091         ; get status
+02B4   3000           00092         movlw 0x00
+02B5   2???           00093         call PS2_SPI_send
+                      00094         ; get left side buttons
+02B6   3000           00095         movlw 0x00
+02B7   2???           00096         call PS2_SPI_send
+02B8   009D           00097         movwf leftButtons
+                      00098         ; get right side buttons
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 20
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+02B9   3000           00099         movlw 0x00
+02BA   2???           00100         call PS2_SPI_send
+02BB   009C           00101         movwf rightButtons      
+                      00102         ; get right joystick X value
+02BC   3000           00103         movlw 0x00
+02BD   2???           00104         call PS2_SPI_send
+02BE   009E           00105         movwf rightJoystickX
+                      00106         ; get right joystick Y value
+02BF   3000           00107         movlw 0x00
+02C0   2???           00108         call PS2_SPI_send
+02C1   00A0           00109         movwf rightJoystickY
+                      00110         ; get left joystick X value
+02C2   3000           00111         movlw 0x00
+02C3   2???           00112         call PS2_SPI_send
+02C4   009F           00113         movwf leftJoystickX
+                      00114         ; get left joystick Y value
+02C5   3000           00115         movlw 0x00
+02C6   2???           00116         call PS2_SPI_send
+02C7   00A1           00117         movwf leftJoystickY
+                      00118 
+02C8   2???           00119         call delay_us_50
+02C9   2???           00120         call delay_us_50
+02CA   1606           00121         bsf PS2_ATT
+                      00122         ;************** end sending ******************
+02CB   0008           00123         return
+                      00124 
+                      00125 
+                      00126 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00127 ; FUNCTION TO INITIALIZE THE PS2 CONTROLLER
+                      00128 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+02CC                  00129 PS2_Set_Analog_Mode
+                      00130         ;/////// Send Commands ///////
+02CC   1206           00131         bcf PS2_ATT
+02CD   2???           00132         call delay_us_50
+02CE   2???           00133         call delay_us_50
+02CF   3001           00134         movlw 0x01
+02D0   2???           00135         call PS2_SPI_send
+02D1   3042           00136         movlw 0x42
+02D2   2???           00137         call PS2_SPI_send
+02D3   3000           00138         movlw 0x00
+02D4   2???           00139         call PS2_SPI_send
+02D5   3000           00140         movlw 0x00
+02D6   2???           00141         call PS2_SPI_send
+02D7   3000           00142         movlw 0x00
+02D8   2???           00143         call PS2_SPI_send
+02D9   2???           00144         call delay_us_50
+02DA   2???           00145         call delay_us_50
+02DB   1606           00146         bsf PS2_ATT
+                      00147         ;/////// End Sending ///////
+                      00148         ;call delay_us_50
+                      00149         ;/////// Send Commands ///////
+02DC   1206           00150         bcf PS2_ATT
+02DD   2???           00151         call delay_us_50
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 21
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+02DE   2???           00152         call delay_us_50
+02DF   3001           00153         movlw 0x01
+02E0   2???           00154         call PS2_SPI_send
+02E1   3043           00155         movlw 0x43
+02E2   2???           00156         call PS2_SPI_send
+02E3   3000           00157         movlw 0x00
+02E4   2???           00158         call PS2_SPI_send
+02E5   3001           00159         movlw 0x01
+02E6   2???           00160         call PS2_SPI_send
+02E7   3000           00161         movlw 0x00
+02E8   2???           00162         call PS2_SPI_send
+02E9   2???           00163         call delay_us_50
+02EA   2???           00164         call delay_us_50
+02EB   1606           00165         bsf PS2_ATT
+                      00166         ;/////// End Sending ///////
+                      00167         ;call delay_us_50
+                      00168         ;/////// Send Commands ///////
+02EC   1206           00169         bcf PS2_ATT
+02ED   2???           00170         call delay_us_50
+02EE   2???           00171         call delay_us_50
+02EF   3001           00172         movlw 0x01
+02F0   2???           00173         call PS2_SPI_send
+02F1   3044           00174         movlw 0x44
+02F2   2???           00175         call PS2_SPI_send
+02F3   3000           00176         movlw 0x00
+02F4   2???           00177         call PS2_SPI_send
+02F5   3001           00178         movlw 0x01
+02F6   2???           00179         call PS2_SPI_send
+02F7   3003           00180         movlw 0x03
+02F8   2???           00181         call PS2_SPI_send
+02F9   3000           00182         movlw 0x00
+02FA   2???           00183         call PS2_SPI_send
+02FB   3000           00184         movlw 0x00
+02FC   2???           00185         call PS2_SPI_send
+02FD   3000           00186         movlw 0x00
+02FE   2???           00187         call PS2_SPI_send
+02FF   3000           00188         movlw 0x00
+0300   2???           00189         call PS2_SPI_send
+0301   2???           00190         call delay_us_50
+0302   2???           00191         call delay_us_50
+0303   1606           00192         bsf PS2_ATT
+                      00193         ;/////// End Sending ///////
+                      00194         ;call delay_us_50
+                      00195         ;/////// Send Commands ///////
+0304   1206           00196         bcf PS2_ATT
+0305   2???           00197         call delay_us_50
+0306   2???           00198         call delay_us_50
+0307   3001           00199         movlw 0x01
+0308   2???           00200         call PS2_SPI_send
+0309   3043           00201         movlw 0x43
+030A   2???           00202         call PS2_SPI_send
+030B   3000           00203         movlw 0x00
+030C   2???           00204         call PS2_SPI_send
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 22
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+030D   3000           00205         movlw 0x00
+030E   2???           00206         call PS2_SPI_send
+030F   305A           00207         movlw 0x5A
+0310   2???           00208         call PS2_SPI_send
+0311   305A           00209         movlw 0x5A
+0312   2???           00210         call PS2_SPI_send
+0313   305A           00211         movlw 0x5A
+0314   2???           00212         call PS2_SPI_send
+0315   305A           00213         movlw 0x5A
+0316   2???           00214         call PS2_SPI_send
+0317   305A           00215         movlw 0x5A
+0318   2???           00216         call PS2_SPI_send
+0319   2???           00217         call delay_us_50
+031A   2???           00218         call delay_us_50
+031B   1606           00219         bsf PS2_ATT
+                      00220         ;/////// End Sending ///////
+031C   0008           00221         return
+                      00222         
+                      00223         
+                      00224 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00225 ; FUNCTION FOR SENDING AND READING DATA VIA SPI BUS (LSBFirst)
+                      00226 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+031D                  00227 PS2_SPI_send
+031D   0092           00228         movwf outByte
+031E   3008           00229         movlw 0x08
+031F   0091           00230         movwf bits_counter
+0320   0193           00231         clrf inByte
+0321                  00232 PS2_SPI_loop ; prepare the bit to clock
+0321   1C12           00233         btfss outByte,0
+0322   1386           00234         bcf PS2_CMD
+0323   1812           00235         btfsc outByte,0
+0324   1786           00236         bsf PS2_CMD
+0325   1286           00237         bcf PS2_CLK ; generate clock pulse
+0326   2???           00238         call delay_us_50
+                      00239         ; read the data bit
+0327   1B06           00240         btfsc PS2_DAT
+0328   1793           00241         bsf inByte,7
+0329   1686           00242         bsf PS2_CLK ; end clock pulse
+032A   2???           00243         call delay_us_50
+032B   0B91           00244         decfsz bits_counter,f
+032C   2???           00245         goto PS2_next_bit
+032D   2???           00246         goto PS2_end_sending
+032E                  00247 PS2_next_bit
+                      00248         ; move to next bit
+032E   0C92           00249         rrf outByte,f
+032F   0C93           00250         rrf inByte,f
+0330   2???           00251         goto PS2_SPI_loop
+0331                  00252 PS2_end_sending
+0331   0813           00253         movfw inByte
+0332   0008           00254         return
+                      00159 #include "nRF24L01.inc"
+                      00001 RF24_write_reg macro reg,val
+                      00002         bcf RF24_CSN
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 23
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00003         movlw reg
+                      00004         call RF24_SPI_send ; REG
+                      00005         movlw val
+                      00006         call RF24_SPI_send ; VAL
+                      00007         bsf RF24_CSN
+                      00008         endm
+                      00009 
+                      00010 RF24_write_reg_buffer macro reg,c1,c2,c3,c4,c5
+                      00011         bcf RF24_CSN
+                      00012         movlw reg
+                      00013         call RF24_SPI_send ; REG
+                      00014         movlw c1
+                      00015         call RF24_SPI_send ; VAL
+                      00016         movlw c2
+                      00017         call RF24_SPI_send ; VAL
+                      00018         movlw c3
+                      00019         call RF24_SPI_send ; VAL
+                      00020         movlw c4
+                      00021         call RF24_SPI_send ; VAL
+                      00022         movlw c5
+                      00023         call RF24_SPI_send ; VAL
+                      00024         bsf RF24_CSN
+                      00025         endm
+                      00026 
+                      00027 
+                      00028 
+                      00029 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00030 ; FUNCTION TO TRANSMIT DATA
+                      00031 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+0333                  00032 RF24_Transmit
+                      00033         ; Power up
+                      00034         ;RF24_write_reg 0x20,0x1E
+                      00035 
+                      00036          ; Flush TX
+0333   1185           00037         bcf RF24_CSN
+0334   30E1           00038         movlw 0xE1
+0335   2???           00039         call RF24_SPI_send
+0336   1585           00040         bsf RF24_CSN
+                      00041 
+                      00042          ; Write in the payload
+0337   1185           00043         bcf RF24_CSN
+0338   30A0           00044         movlw 0xA0
+0339   2???           00045         call RF24_SPI_send
+033A   0818           00046         movfw Throttle ; send Throttle
+033B   2???           00047         call RF24_SPI_send
+033C   081B           00048         movfw Pitch ; send Pitch
+033D   2???           00049         call RF24_SPI_send
+033E   081A           00050         movfw Roll ; send Roll
+033F   2???           00051         call RF24_SPI_send
+0340   0819           00052         movfw Yaw ; send Yaw
+0341   2???           00053         call RF24_SPI_send
+0342   081D           00054         movfw leftButtons ; send left commands
+0343   2???           00055         call RF24_SPI_send
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 24
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0344   081C           00056         movfw rightButtons ; send right commands
+0345   2???           00057         call RF24_SPI_send
+0346   1585           00058         bsf RF24_CSN
+                      00059 
+                      00060         ; Start transmission
+0347   1505           00061         bsf RF24_CE
+0348   2???           00062         call delay_ms_100
+                      00063         ;call delay_us_50
+0349   1105           00064         bcf RF24_CE
+034A   2???           00065         call delay_ms_100
+                      00066 
+                      00067         ; Power down
+                      00068         RF24_write_reg 0x20,0x1C 
+034B   1185               M         bcf RF24_CSN
+034C   3020               M         movlw 0x20
+034D   2???               M         call RF24_SPI_send ; REG
+034E   301C               M         movlw 0x1C
+034F   2???               M         call RF24_SPI_send ; VAL
+0350   1585               M         bsf RF24_CSN
+                      00069         ; Clear STATUS flags
+                      00070         RF24_write_reg 0x27,0x70
+0351   1185               M         bcf RF24_CSN
+0352   3027               M         movlw 0x27
+0353   2???               M         call RF24_SPI_send ; REG
+0354   3070               M         movlw 0x70
+0355   2???               M         call RF24_SPI_send ; VAL
+0356   1585               M         bsf RF24_CSN
+                      00071         ; Power up
+                      00072         RF24_write_reg 0x20,0x1E
+0357   1185               M         bcf RF24_CSN
+0358   3020               M         movlw 0x20
+0359   2???               M         call RF24_SPI_send ; REG
+035A   301E               M         movlw 0x1E
+035B   2???               M         call RF24_SPI_send ; VAL
+035C   1585               M         bsf RF24_CSN
+                      00073         ; Flush RX and TX buffers
+                      00074         RF24_write_reg 0xE2,0xE1
+035D   1185               M         bcf RF24_CSN
+035E   30E2               M         movlw 0xE2
+035F   2???               M         call RF24_SPI_send ; REG
+0360   30E1               M         movlw 0xE1
+0361   2???               M         call RF24_SPI_send ; VAL
+0362   1585               M         bsf RF24_CSN
+0363   0008           00075         return
+                      00076 
+                      00077         
+                      00078 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00079 ; FUNCTION TO CONFIGURE THE DEVICE AS TRANSMITTER
+                      00080 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+0364                  00081 RF24_Config_TX
+0364   1105           00082         bcf RF24_CE
+0365   1585           00083         bsf RF24_CSN
+                      00084 
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 25
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00085         ; Clear STATUS flags
+                      00086         RF24_write_reg 0x27,0x70
+0366   1185               M         bcf RF24_CSN
+0367   3027               M         movlw 0x27
+0368   2???               M         call RF24_SPI_send ; REG
+0369   3070               M         movlw 0x70
+036A   2???               M         call RF24_SPI_send ; VAL
+036B   1585               M         bsf RF24_CSN
+                      00087 
+                      00088         ; Configure the device as transmitter
+                      00089         RF24_write_reg 0x20,0x1C
+036C   1185               M         bcf RF24_CSN
+036D   3020               M         movlw 0x20
+036E   2???               M         call RF24_SPI_send ; REG
+036F   301C               M         movlw 0x1C
+0370   2???               M         call RF24_SPI_send ; VAL
+0371   1585               M         bsf RF24_CSN
+                      00090 
+                      00091         ; Write RX address (Pipe 0) 9A:FE:BF:ED:0C
+                      00092         RF24_write_reg_buffer 0x2A,0x9A,0xFE,0xBF,0xED,0x0C
+0372   1185               M         bcf RF24_CSN
+0373   302A               M         movlw 0x2A
+0374   2???               M         call RF24_SPI_send ; REG
+0375   309A               M         movlw 0x9A
+0376   2???               M         call RF24_SPI_send ; VAL
+0377   30FE               M         movlw 0xFE
+0378   2???               M         call RF24_SPI_send ; VAL
+0379   30BF               M         movlw 0xBF
+037A   2???               M         call RF24_SPI_send ; VAL
+037B   30ED               M         movlw 0xED
+037C   2???               M         call RF24_SPI_send ; VAL
+037D   300C               M         movlw 0x0C
+037E   2???               M         call RF24_SPI_send ; VAL
+037F   1585               M         bsf RF24_CSN
+                      00093 
+                      00094         ; Write TX address 9A:FE:BF:ED:0C
+                      00095         RF24_write_reg_buffer 0x30,0x9A,0xFE,0xBF,0xED,0x0C
+0380   1185               M         bcf RF24_CSN
+0381   3030               M         movlw 0x30
+0382   2???               M         call RF24_SPI_send ; REG
+0383   309A               M         movlw 0x9A
+0384   2???               M         call RF24_SPI_send ; VAL
+0385   30FE               M         movlw 0xFE
+0386   2???               M         call RF24_SPI_send ; VAL
+0387   30BF               M         movlw 0xBF
+0388   2???               M         call RF24_SPI_send ; VAL
+0389   30ED               M         movlw 0xED
+038A   2???               M         call RF24_SPI_send ; VAL
+038B   300C               M         movlw 0x0C
+038C   2???               M         call RF24_SPI_send ; VAL
+038D   1585               M         bsf RF24_CSN
+                      00096 
+                      00097         ; Set the address width to 5
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 26
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00098         RF24_write_reg 0x23,0x03
+038E   1185               M         bcf RF24_CSN
+038F   3023               M         movlw 0x23
+0390   2???               M         call RF24_SPI_send ; REG
+0391   3003               M         movlw 0x03
+0392   2???               M         call RF24_SPI_send ; VAL
+0393   1585               M         bsf RF24_CSN
+                      00099 
+                      00100         ; Set the radio channel to CHANNEL
+                      00101         RF24_write_reg 0x25,CHANNEL
+0394   1185               M         bcf RF24_CSN
+0395   3025               M         movlw 0x25
+0396   2???               M         call RF24_SPI_send ; REG
+0397   303B               M         movlw 0x3B
+0398   2???               M         call RF24_SPI_send ; VAL
+0399   1585               M         bsf RF24_CSN
+                      00102 
+                      00103         ; Set the retries to 4000us and 15
+                      00104         RF24_write_reg 0x24,0xFF
+039A   1185               M         bcf RF24_CSN
+039B   3024               M         movlw 0x24
+039C   2???               M         call RF24_SPI_send ; REG
+039D   30FF               M         movlw 0xFF
+039E   2???               M         call RF24_SPI_send ; VAL
+039F   1585               M         bsf RF24_CSN
+                      00105 
+                      00106         ; Set the device debit as 0dBm and 250 kbps
+                      00107         RF24_write_reg 0x26,0x26
+03A0   1185               M         bcf RF24_CSN
+03A1   3026               M         movlw 0x26
+03A2   2???               M         call RF24_SPI_send ; REG
+03A3   3026               M         movlw 0x26
+03A4   2???               M         call RF24_SPI_send ; VAL
+03A5   1585               M         bsf RF24_CSN
+                      00108 
+                      00109         ; Set the PAYLOAD size to 7
+                      00110         RF24_write_reg 0x31,0x07
+03A6   1185               M         bcf RF24_CSN
+03A7   3031               M         movlw 0x31
+03A8   2???               M         call RF24_SPI_send ; REG
+03A9   3007               M         movlw 0x07
+03AA   2???               M         call RF24_SPI_send ; VAL
+03AB   1585               M         bsf RF24_CSN
+                      00111 
+                      00112         ; Disable Dynamic Payload
+                      00113         RF24_write_reg 0x1C,0x00
+03AC   1185               M         bcf RF24_CSN
+03AD   301C               M         movlw 0x1C
+03AE   2???               M         call RF24_SPI_send ; REG
+03AF   3000               M         movlw 0x00
+03B0   2???               M         call RF24_SPI_send ; VAL
+03B1   1585               M         bsf RF24_CSN
+                      00114 
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 27
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00115         ; Power up the device as transmitter
+                      00116         RF24_write_reg 0x20,0x1E
+03B2   1185               M         bcf RF24_CSN
+03B3   3020               M         movlw 0x20
+03B4   2???               M         call RF24_SPI_send ; REG
+03B5   301E               M         movlw 0x1E
+03B6   2???               M         call RF24_SPI_send ; VAL
+03B7   1585               M         bsf RF24_CSN
+                      00117 
+                      00118         ; Flush RX and TX buffers
+                      00119         RF24_write_reg 0xE2,0xE1
+03B8   1185               M         bcf RF24_CSN
+03B9   30E2               M         movlw 0xE2
+03BA   2???               M         call RF24_SPI_send ; REG
+03BB   30E1               M         movlw 0xE1
+03BC   2???               M         call RF24_SPI_send ; VAL
+03BD   1585               M         bsf RF24_CSN
+                      00120 
+03BE   0008           00121         return
+                      00122 
+                      00123 
+                      00124         
+                      00125 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00126 ; FUNCTION TO SEND AND READ DATA VIA SPI BUS (MSBFirst)
+                      00127 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+03BF                  00128 RF24_SPI_send
+03BF   0092           00129         movwf outByte
+03C0   3008           00130         movlw 0x08
+03C1   0091           00131         movwf bits_counter
+03C2   0193           00132         clrf inByte
+03C3                  00133 RF24_SPI_loop 
+                      00134         ; send data bits
+03C3   1F92           00135         btfss outByte,7
+03C4   1005           00136         bcf RF24_MOSI
+03C5   1B92           00137         btfsc outByte,7
+03C6   1405           00138         bsf RF24_MOSI
+03C7   1485           00139         bsf RF24_SCK
+                      00140         ; read data bits
+03C8   1B06           00141         btfsc RF24_MISO
+03C9   1413           00142         bsf inByte,0
+03CA   1F06           00143         btfss RF24_MISO
+03CB   1013           00144         bcf inByte,0
+03CC   1085           00145         bcf RF24_SCK
+03CD   0B91           00146         decfsz bits_counter,f
+03CE   2???           00147         goto RF24_next_bit
+03CF   2???           00148         goto RF24_end_sending
+03D0                  00149 RF24_next_bit
+                      00150         ; move to next bit
+03D0   0D92           00151         rlf outByte,f
+03D1   0D93           00152         rlf inByte,f
+03D2   2???           00153         goto RF24_SPI_loop
+03D3                  00154 RF24_end_sending
+03D3   0813           00155         movfw inByte
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 28
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+03D4   0008           00156         return
+                      00160 
+                      00161 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00162 ; FUNCTIONS TO MAKE DELAY
+                      00163 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+03D5                  00164 delay_us_50
+03D5   300F           00165         movlw 0x0F ; 15x3+4 =  49us
+03D6   0096           00166         movwf tmp1
+03D7                  00167 delay_50us_1
+03D7   0B96           00168         decfsz tmp1,f
+03D8   2???           00169         goto delay_50us_1
+03D9   0008           00170         return
+                      00171 
+                      00172 
+03DA                  00173 delay_ms_100
+03DA   3064           00174         movlw 0x64
+03DB   0096           00175         movwf tmp1
+03DC                  00176 delay_100ms_1
+03DC   30FA           00177         movlw 0xFA
+03DD   0097           00178         movwf tmp2
+03DE                  00179 delay_100ms_2
+03DE   0000           00180         nop
+03DF   0B97           00181         decfsz tmp2,f
+03E0   2???           00182         goto delay_100ms_2
+03E1   0B96           00183         decfsz tmp1,f
+03E2   2???           00184         goto delay_100ms_1
+03E3   0008           00185         return
+                      00186 
+                      00187 
+                      00188 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00189 ; FUNCTIONS TO DIVIDE TWO NUMBERS AND GET AN INTEGER RESULT
+                      00190 ; b1 : dividend
+                      00191 ; b2 : devisor
+                      00192 ; b3 : quotient
+                      00193 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+03E4                  00194 Divide_Integer
+03E4   018E           00195         clrf b3
+03E5   008C           00196         movwf b1
+03E6   3C7B           00197         sublw 0x7B ; 123 - b1
+03E7   1903           00198         btfsc STATUS,Z
+03E8   2???           00199         goto div_end
+03E9   1C03           00200         btfss STATUS,C
+03EA   2???           00201         goto t_sup
+03EB   2???           00202         goto t_inf
+03EC                  00203 t_sup
+03EC   307B           00204         movlw 0x7B
+03ED   028C           00205         subwf b1,f
+03EE   140F           00206         bsf b4,0
+03EF   2???           00207         goto div_loop
+03F0                  00208 t_inf
+03F0   008C           00209         movwf b1
+03F1   008C           00210         movwf b1
+03F2   100F           00211         bcf b4,0
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 29
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+03F3                  00212 div_loop
+03F3   080D           00213         movfw b2
+03F4   020C           00214         subwf b1,w ; b1 - b2
+03F5   1C03           00215         btfss STATUS,C
+03F6   2???           00216         goto div_end
+03F7   008C           00217         movwf b1
+03F8   0A8E           00218         incf b3,f
+03F9   2???           00219         goto div_loop
+03FA                  00220 div_end
+03FA   080E           00221         movfw b3
+03FB   0008           00222         return
+                      00223 
+3FF2                  00224         END
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 30
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+BANK0                             
+BANK1                             
+C                                 00000000
+CHANNEL                           0x3B
+DC                                00000001
+Divide_Integer                    000003E4
+EEADR                             00000009
+EECON1                            00000088
+EECON2                            00000089
+EEDATA                            00000008
+EEIE                              00000006
+EEIF                              00000004
+F                                 00000001
+FSR                               00000004
+GIE                               00000007
+INDF                              00000000
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IRP                               00000007
+LCD_CLK                           PORTB, 0
+LCD_Clear                         000001D7
+LCD_DC                            PORTB, 3
+LCD_Print_Number                  00000202
+LCD_Print_Strings                 0000022B
+LCD_Print_Value                   0000025A
+LCD_RST                           PORTB, 1
+LCD_SCE                           PORTB, 2
+LCD_SDA                           PORTB, 7
+LCD_SETUP                         000001C0
+LCD_SPI_loop                      000001F5
+LCD_SPI_send                      000001F0
+LCD_Send_Cmd                      000001EA
+LCD_Send_Data                     000001ED
+LCD_Set_Cursor                    000001E3
+LCD_end_sending                   00000200
+LCD_next_bit                      000001FE
+NOT_PD                            00000003
+NOT_RBPU                          00000007
+NOT_TO                            00000004
+OPTIONVAL                         00000008
+OPTION_REG                        00000081
+PCL                               00000002
+PCLATH                            0000000A
+PORTA                             00000005
+PORTB                             00000006
+PS0                               00000000
+PS1                               00000001
+PS2                               00000002
+PS2_ATT                           PORTB, 4
+PS2_CLK                           PORTB, 5
+PS2_CMD                           PORTB, 7
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 31
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PS2_Compute_Values                00000272
+PS2_DAT                           PORTB, 6
+PS2_Read_Data                     000002AD
+PS2_SPI_loop                      00000321
+PS2_SPI_send                      0000031D
+PS2_Set_Analog_Mode               000002CC
+PS2_end_sending                   00000331
+PS2_next_bit                      0000032E
+PSA                               00000003
+Pitch                             0000001B
+Print_0                           00000124
+Print_1                           00000131
+Print_2                           0000013E
+Print_3                           0000014B
+Print_4                           00000158
+Print_5                           00000165
+Print_6                           00000172
+Print_7                           0000017F
+Print_8                           0000018C
+Print_9                           00000199
+Print_G                           0000010A
+Print_M                           00000117
+Print_P                           00000095
+Print_R                           000000BC
+Print_T                           0000003A
+Print_Y                           000000C9
+Print_a                           000000D6
+Print_c                           000000AF
+Print_d                           000000F0
+Print_e                           00000088
+Print_h                           00000047
+Print_i                           000000A2
+Print_l                           0000007B
+Print_minus                       000001A6
+Print_o                           00000061
+Print_plus                        000001B3
+Print_r                           00000054
+Print_t                           0000006E
+Print_w                           000000E3
+Print_x                           000000FD
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 32
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+RBIE                              00000003
+RBIF                              00000000
+RD                                00000000
+RF24_CE                           PORTA,2
+RF24_CSN                          PORTA,3
+RF24_Config_TX                    00000364
+RF24_MISO                         PORTB,6
+RF24_MOSI                         PORTA,0
+RF24_SCK                          PORTA,1
+RF24_SPI_loop                     000003C3
+RF24_SPI_send                     000003BF
+RF24_Transmit                     00000333
+RF24_end_sending                  000003D3
+RF24_next_bit                     000003D0
+RF24_write_reg                    
+RF24_write_reg_buffer             
+RP0                               00000005
+RP1                               00000006
+Roll                              0000001A
+STATUS                            00000003
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0SE                              00000004
+TMR0                              00000001
+TMR0IE                            00000005
+TMR0IF                            00000002
+TRISA                             00000085
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISB                             00000086
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+Throttle                          00000018
+W                                 00000000
+WR                                00000001
+WREN                              00000002
+WRERR                             00000003
+Yaw                               00000019
+Z                                 00000002
+_CONFIG                           00002007
+_CP_OFF                           00003FFF
+_CP_ON                            0000000F
+_FOSC_EXTRC                       00003FFF
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 33
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_FOSC_HS                          00003FFE
+_FOSC_LP                          00003FFC
+_FOSC_XT                          00003FFD
+_HS_OSC                           00003FFE
+_IDLOC0                           00002000
+_IDLOC1                           00002001
+_IDLOC2                           00002002
+_IDLOC3                           00002003
+_LP_OSC                           00003FFC
+_PWRTE_OFF                        00003FFF
+_PWRTE_ON                         00003FF7
+_RC_OSC                           00003FFF
+_WDTE_OFF                         00003FFB
+_WDTE_ON                          00003FFF
+_WDT_OFF                          00003FFB
+_WDT_ON                           00003FFF
+_XT_OSC                           00003FFD
+__16F84                           00000001
+__DEBUG                           1
+__next_                           00000282
+_minus                            00000263
+_plus                             00000261
+b1                                0000000C
+b2                                0000000D
+b3                                0000000E
+b4                                0000000F
+b5                                00000010
+bits_counter                      00000011
+column                            00000014
+continue                          00000265
+delay_100ms_1                     000003DC
+delay_100ms_2                     000003DE
+delay_50us_1                      000003D7
+delay_ms_100                      000003DA
+delay_us_50                       000003D5
+div_end                           000003FA
+div_loop                          000003F3
+erase                             00000008
+inByte                            00000013
+init                              00000001
+lcd_clear_1                       000001DA
+lcd_clear_2                       000001DC
+leftButtons                       0000001D
+leftJoystickX                     0000001F
+leftJoystickY                     00000021
+line                              00000015
+loop                              00000020
+next_nb_2                         0000026B
+outByte                           00000012
+pitch_sign                        0000029A
+rightButtons                      0000001C
+rightJoystickX                    0000001E
+rightJoystickY                    00000020
+MPASM  5.43                          MAIN.ASM   3-13-2016  16:30:44         PAGE 34
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+roll_sign                         000002A8
+start                             0000001B
+t_inf                             000003F0
+t_sup                             000003EC
+tmp1                              00000016
+tmp2                              00000017
+v_loop_2                          00000266
+yaw_sign                          0000028C
+
+Errors   :     0
+Warnings :     0 reported,     0 suppressed
+Messages :     1 reported,     0 suppressed
+
+
